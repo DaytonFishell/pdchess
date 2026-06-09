@@ -8,12 +8,14 @@
 #define CELL_SIZE 30
 #define PANEL_X 248
 
-typedef enum {
+typedef enum
+{
     SCREEN_SETUP,
     SCREEN_BOARD
 } screen_mode;
 
-typedef struct {
+typedef struct
+{
     const char *name;
     const char *fen;
 } lab_position;
@@ -145,11 +147,14 @@ static void draw_piece(pdchess_square square, pdchess_piece piece)
     int width;
     square_to_screen(square, &x, &y);
 
-    if (piece.color == PDCHESS_COLOR_BLACK) {
+    if (piece.color == PDCHESS_COLOR_BLACK)
+    {
         pd->graphics->fillEllipse(x + 5, y + 5, 20, 20, 0, 360,
                                   kColorBlack);
         pd->graphics->setDrawMode(kDrawModeFillWhite);
-    } else {
+    }
+    else
+    {
         pd->graphics->fillEllipse(x + 5, y + 5, 20, 20, 0, 360,
                                   kColorWhite);
         pd->graphics->drawEllipse(x + 5, y + 5, 20, 20, 2, 0, 360,
@@ -166,8 +171,10 @@ static void draw_board(void)
 {
     int row;
     int column;
-    for (row = 0; row < 8; ++row) {
-        for (column = 0; column < 8; ++column) {
+    for (row = 0; row < 8; ++row)
+    {
+        for (column = 0; column < 8; ++column)
+        {
             int x = column * CELL_SIZE;
             int y = row * CELL_SIZE;
             int file = display_file(column);
@@ -177,8 +184,9 @@ static void draw_board(void)
             pdchess_piece piece = pdchess_get_piece(&game, square);
 
             pd->graphics->fillRect(x, y, CELL_SIZE, CELL_SIZE,
-                ((file + rank) & 1) ? kColorBlack : kColorWhite);
-            if (is_legal_target(square)) {
+                                   ((file + rank) & 1) ? kColorBlack : kColorWhite);
+            if (is_legal_target(square))
+            {
                 pd->graphics->fillEllipse(x + 11, y + 11, 8, 8,
                                           0, 360, kColorXOR);
             }
@@ -224,19 +232,24 @@ static void draw_panel(void)
     draw_line(text, 2);
     snprintf(text, sizeof(text), "Turn: %s",
              pdchess_side_to_move(&game) == PDCHESS_COLOR_WHITE
-                 ? "White" : "Black");
+                 ? "White"
+                 : "Black");
     draw_line(text, 3);
     snprintf(text, sizeof(text), "State: %s",
              pdchess_status_name(status));
     draw_line(text, 4);
 
-    if (has_last_move && pdchess_move_to_uci(last_move, move_text)) {
+    if (has_last_move && pdchess_move_to_uci(last_move, move_text))
+    {
         snprintf(text, sizeof(text), "Move: %s", move_text);
         draw_line(text, 5);
     }
-    if (ai_thinking) {
+    if (ai_thinking)
+    {
         draw_line("AI: thinking...", 7);
-    } else if (last_search.has_move) {
+    }
+    else if (last_search.has_move)
+    {
         snprintf(text, sizeof(text), "Score: %ld cp",
                  (long)last_search.score_cp);
         draw_line(text, 7);
@@ -279,16 +292,21 @@ static void move_cursor(int dx, int dy)
 {
     int file = pdchess_square_file(cursor);
     int rank = pdchess_square_rank(cursor);
-    if (human_side == PDCHESS_COLOR_BLACK) {
+    if (human_side == PDCHESS_COLOR_BLACK)
+    {
         dx = -dx;
         dy = -dy;
     }
     file += dx;
     rank -= dy;
-    if (file < 0) file = 0;
-    if (file > 7) file = 7;
-    if (rank < 0) rank = 0;
-    if (rank > 7) rank = 7;
+    if (file < 0)
+        file = 0;
+    if (file > 7)
+        file = 7;
+    if (rank < 0)
+        rank = 0;
+    if (rank > 7)
+        rank = 7;
     cursor = pdchess_make_square((uint8_t)file, (uint8_t)rank);
 }
 
@@ -303,10 +321,13 @@ static void select_or_move(void)
          pdchess_side_to_move(&game) != human_side) ||
         pdchess_get_status(&game) >= PDCHESS_GAME_CHECKMATE)
         return;
-    if (selected != PDCHESS_SQUARE_NONE) {
-        for (i = 0; i < legal_count; ++i) {
+    if (selected != PDCHESS_SQUARE_NONE)
+    {
+        for (i = 0; i < legal_count; ++i)
+        {
             if (legal_moves[i].from == selected &&
-                legal_moves[i].to == cursor) {
+                legal_moves[i].to == cursor)
+            {
                 last_move = legal_moves[i];
                 pdchess_apply_move(&game, last_move);
                 has_last_move = true;
@@ -321,7 +342,8 @@ static void select_or_move(void)
     }
     piece = pdchess_get_piece(&game, cursor);
     if (piece.type != PDCHESS_PIECE_NONE &&
-        piece.color == controlled_side) {
+        piece.color == controlled_side)
+    {
         selected = cursor;
         crank_index = -1;
     }
@@ -356,7 +378,8 @@ static void run_ai(void)
     search_deadline = started + time_limits_ms[difficulty];
     last_search = pdchess_search(&game, limits);
     last_search_ms = pd->system->getCurrentTimeMilliseconds() - started;
-    if (last_search.has_move) {
+    if (last_search.has_move)
+    {
         last_move = last_search.best_move;
         pdchess_apply_move(&game, last_move);
         has_last_move = true;
@@ -381,7 +404,8 @@ static int update(void *userdata)
     pd->graphics->clear(kColorWhite);
     pd->graphics->setFont(font);
 
-    if (screen == SCREEN_SETUP) {
+    if (screen == SCREEN_SETUP)
+    {
         if (pushed & (kButtonUp | kButtonDown))
             human_side = human_side == PDCHESS_COLOR_WHITE
                              ? PDCHESS_COLOR_BLACK
@@ -390,7 +414,8 @@ static int update(void *userdata)
             difficulty = (difficulty + 2) % 3;
         if (pushed & kButtonRight)
             difficulty = (difficulty + 1) % 3;
-        if (pushed & kButtonA) {
+        if (pushed & kButtonA)
+        {
             screen = SCREEN_BOARD;
             load_position(0);
         }
@@ -398,16 +423,25 @@ static int update(void *userdata)
         return 1;
     }
 
-    if (!ai_thinking) {
-        if (pushed & kButtonLeft) move_cursor(-1, 0);
-        if (pushed & kButtonRight) move_cursor(1, 0);
-        if (pushed & kButtonUp) move_cursor(0, 1);
-        if (pushed & kButtonDown) move_cursor(0, -1);
-        if (pushed & kButtonA) select_or_move();
-        if (pushed & kButtonB) selected = PDCHESS_SQUARE_NONE;
+    if (!ai_thinking)
+    {
+        if (pushed & kButtonLeft)
+            move_cursor(-1, 0);
+        if (pushed & kButtonRight)
+            move_cursor(1, 0);
+        if (pushed & kButtonUp)
+            move_cursor(0, -1);
+        if (pushed & kButtonDown)
+            move_cursor(0, 1);
+        if (pushed & kButtonA)
+            select_or_move();
+        if (pushed & kButtonB)
+            selected = PDCHESS_SQUARE_NONE;
         crank = pd->system->getCrankChange();
-        if (crank >= 8.0f) cycle_crank_target(1);
-        if (crank <= -8.0f) cycle_crank_target(-1);
+        if (crank >= 8.0f)
+            cycle_crank_target(1);
+        if (crank <= -8.0f)
+            cycle_crank_target(-1);
     }
 
     if (ai_pending && !ai_thinking)
@@ -425,7 +459,8 @@ __declspec(dllexport)
 int eventHandler(PlaydateAPI *playdate, PDSystemEvent event, uint32_t arg)
 {
     (void)arg;
-    if (event == kEventInit) {
+    if (event == kEventInit)
+    {
         static const char *position_names[] = {
             "Start", "Castling", "En passant",
             "Promotion", "Mate", "Stalemate"};
