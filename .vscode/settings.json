@@ -1,0 +1,5 @@
+{
+    "fossil.ignoreMissingFossilWarning": true,
+    "playdate-debug.sourcePath": "V:\\chess-playdate\\pdchess",
+    "playdate-debug.productName": "pdchess"
+}

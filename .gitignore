@@ -1,0 +1,6 @@
+/build/
+/demo/build/
+/demo/build-device*/
+/demo/Source/pdex.dll
+/demo/Source/pdex.elf
+/demo/*.pdx/
