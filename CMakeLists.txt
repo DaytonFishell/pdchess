@@ -5,7 +5,10 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-add_library(pdchess STATIC src/pdchess.c)
+add_library(pdchess STATIC
+    src/pdchess.c
+    src/syscalls.c
+)
 target_include_directories(pdchess PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)

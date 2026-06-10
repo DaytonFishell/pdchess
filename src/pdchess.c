@@ -20,7 +20,8 @@
 #define SCORE_MATE 30000
 #define SCORE_INF 32000
 
-typedef struct {
+typedef struct
+{
     int8_t board[64];
     uint8_t side;
     uint8_t castling;
@@ -29,7 +30,8 @@ typedef struct {
     uint16_t fullmove;
 } engine_state;
 
-typedef struct {
+typedef struct
+{
     uint32_t nodes;
     uint32_t node_limit;
     uint32_t poll_interval;
@@ -41,16 +43,13 @@ typedef struct {
     void *userdata;
 } search_context;
 
-typedef char state_storage_is_large_enough[
-    sizeof(engine_state) <= PDCHESS_STATE_BYTES ? 1 : -1];
+typedef char state_storage_is_large_enough[sizeof(engine_state) <= PDCHESS_STATE_BYTES ? 1 : -1];
 
 static const int16_t piece_values[] = {0, 100, 320, 330, 500, 900, 0};
 static const int8_t knight_steps[][2] = {
-    {1, 2}, {2, 1}, {2, -1}, {1, -2},
-    {-1, -2}, {-2, -1}, {-2, 1}, {-1, 2}};
+    {1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}, {-2, 1}, {-1, 2}};
 static const int8_t king_steps[][2] = {
-    {1, 0}, {1, 1}, {0, 1}, {-1, 1},
-    {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
+    {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
 static const int8_t bishop_steps[][2] = {
     {1, 1}, {-1, 1}, {-1, -1}, {1, -1}};
 static const int8_t rook_steps[][2] = {
@@ -121,14 +120,28 @@ static int8_t fen_piece(char c)
     char lower = c >= 'A' && c <= 'Z' ? (char)(c + ('a' - 'A')) : c;
     int type = 0;
 
-    switch (lower) {
-    case 'p': type = PDCHESS_PIECE_PAWN; break;
-    case 'n': type = PDCHESS_PIECE_KNIGHT; break;
-    case 'b': type = PDCHESS_PIECE_BISHOP; break;
-    case 'r': type = PDCHESS_PIECE_ROOK; break;
-    case 'q': type = PDCHESS_PIECE_QUEEN; break;
-    case 'k': type = PDCHESS_PIECE_KING; break;
-    default: return 0;
+    switch (lower)
+    {
+    case 'p':
+        type = PDCHESS_PIECE_PAWN;
+        break;
+    case 'n':
+        type = PDCHESS_PIECE_KNIGHT;
+        break;
+    case 'b':
+        type = PDCHESS_PIECE_BISHOP;
+        break;
+    case 'r':
+        type = PDCHESS_PIECE_ROOK;
+        break;
+    case 'q':
+        type = PDCHESS_PIECE_QUEEN;
+        break;
+    case 'k':
+        type = PDCHESS_PIECE_KING;
+        break;
+    default:
+        return 0;
     }
 
     return (int8_t)(sign * type);
@@ -156,7 +169,8 @@ void pdchess_init(pdchess_state *state)
 
     memset(state, 0, sizeof(*state));
     s = impl(state);
-    for (file = 0; file < 8; ++file) {
+    for (file = 0; file < 8; ++file)
+    {
         s->board[file] = back_rank[file];
         s->board[8 + file] = PDCHESS_PIECE_PAWN;
         s->board[48 + file] = -PDCHESS_PIECE_PAWN;
@@ -176,7 +190,8 @@ static bool parse_unsigned(const char **cursor, uint16_t *value)
 
     if (*p < '0' || *p > '9')
         return false;
-    while (*p >= '0' && *p <= '9') {
+    while (*p >= '0' && *p <= '9')
+    {
         parsed = parsed * 10u + (uint32_t)(*p - '0');
         if (parsed > UINT16_MAX)
             return false;
@@ -203,17 +218,23 @@ bool pdchess_set_fen(pdchess_state *state, const char *fen)
     s = impl(&parsed_state);
     s->en_passant = PDCHESS_SQUARE_NONE;
 
-    while (*p && *p != ' ') {
-        if (*p == '/') {
+    while (*p && *p != ' ')
+    {
+        if (*p == '/')
+        {
             if (file != 8 || rank == 0)
                 return false;
             --rank;
             file = 0;
-        } else if (*p >= '1' && *p <= '8') {
+        }
+        else if (*p >= '1' && *p <= '8')
+        {
             file += *p - '0';
             if (file > 8)
                 return false;
-        } else {
+        }
+        else
+        {
             int8_t piece = fen_piece(*p);
             if (!piece || file >= 8)
                 return false;
@@ -238,17 +259,31 @@ bool pdchess_set_fen(pdchess_state *state, const char *fen)
     if (*p++ != ' ')
         return false;
 
-    if (*p == '-') {
+    if (*p == '-')
+    {
         ++p;
-    } else {
-        while (*p && *p != ' ') {
+    }
+    else
+    {
+        while (*p && *p != ' ')
+        {
             uint8_t flag;
-            switch (*p++) {
-            case 'K': flag = CASTLE_WHITE_K; break;
-            case 'Q': flag = CASTLE_WHITE_Q; break;
-            case 'k': flag = CASTLE_BLACK_K; break;
-            case 'q': flag = CASTLE_BLACK_Q; break;
-            default: return false;
+            switch (*p++)
+            {
+            case 'K':
+                flag = CASTLE_WHITE_K;
+                break;
+            case 'Q':
+                flag = CASTLE_WHITE_Q;
+                break;
+            case 'k':
+                flag = CASTLE_BLACK_K;
+                break;
+            case 'q':
+                flag = CASTLE_BLACK_Q;
+                break;
+            default:
+                return false;
             }
             if (s->castling & flag)
                 return false;
@@ -258,9 +293,12 @@ bool pdchess_set_fen(pdchess_state *state, const char *fen)
     if (*p++ != ' ')
         return false;
 
-    if (*p == '-') {
+    if (*p == '-')
+    {
         ++p;
-    } else {
+    }
+    else
+    {
         int ep_file;
         int ep_rank;
         if (p[0] < 'a' || p[0] > 'h' ||
@@ -269,7 +307,7 @@ bool pdchess_set_fen(pdchess_state *state, const char *fen)
         ep_file = p[0] - 'a';
         ep_rank = p[1] - '1';
         s->en_passant = pdchess_make_square((uint8_t)ep_file,
-                                             (uint8_t)ep_rank);
+                                            (uint8_t)ep_rank);
         p += 2;
     }
     if (*p++ != ' ' || !parse_unsigned(&p, &s->halfmove) || *p++ != ' ' ||
@@ -319,12 +357,15 @@ bool pdchess_get_fen(const pdchess_state *state, char *buffer, size_t size)
     buffer[0] = '\0';
     s = cimpl(state);
 
-    for (rank = 7; rank >= 0; --rank) {
+    for (rank = 7; rank >= 0; --rank)
+    {
         int empty = 0;
         int file;
-        for (file = 0; file < 8; ++file) {
+        for (file = 0; file < 8; ++file)
+        {
             int8_t piece = s->board[rank * 8 + file];
-            if (!piece) {
+            if (!piece)
+            {
                 ++empty;
                 continue;
             }
@@ -343,25 +384,35 @@ bool pdchess_get_fen(const pdchess_state *state, char *buffer, size_t size)
     if (!append_text(&out, &remaining,
                      s->side == PDCHESS_COLOR_WHITE ? " w " : " b "))
         return false;
-    if (!s->castling) {
+    if (!s->castling)
+    {
         if (!append_char(&out, &remaining, '-'))
             return false;
-    } else {
+    }
+    else
+    {
         if ((s->castling & CASTLE_WHITE_K) &&
-            !append_char(&out, &remaining, 'K')) return false;
+            !append_char(&out, &remaining, 'K'))
+            return false;
         if ((s->castling & CASTLE_WHITE_Q) &&
-            !append_char(&out, &remaining, 'Q')) return false;
+            !append_char(&out, &remaining, 'Q'))
+            return false;
         if ((s->castling & CASTLE_BLACK_K) &&
-            !append_char(&out, &remaining, 'k')) return false;
+            !append_char(&out, &remaining, 'k'))
+            return false;
         if ((s->castling & CASTLE_BLACK_Q) &&
-            !append_char(&out, &remaining, 'q')) return false;
+            !append_char(&out, &remaining, 'q'))
+            return false;
     }
     if (!append_char(&out, &remaining, ' '))
         return false;
-    if (s->en_passant == PDCHESS_SQUARE_NONE) {
+    if (s->en_passant == PDCHESS_SQUARE_NONE)
+    {
         if (!append_char(&out, &remaining, '-'))
             return false;
-    } else {
+    }
+    else
+    {
         if (!append_char(&out, &remaining,
                          (char)('a' + pdchess_square_file(s->en_passant))) ||
             !append_char(&out, &remaining,
@@ -383,7 +434,8 @@ pdchess_piece pdchess_get_piece(const pdchess_state *state,
     if (!state || !pdchess_square_is_valid(square))
         return result;
     piece = cimpl(state)->board[square];
-    if (piece) {
+    if (piece)
+    {
         result.type = (pdchess_piece_type)piece_type(piece);
         result.color = piece_color(piece);
     }
@@ -415,7 +467,8 @@ static bool square_attacked(const engine_state *s,
     int pawn_rank = rank + (attacker == PDCHESS_COLOR_WHITE ? -1 : 1);
     size_t i;
 
-    for (i = 0; i < 2; ++i) {
+    for (i = 0; i < 2; ++i)
+    {
         int pawn_file = file + (i == 0 ? -1 : 1);
         if (on_board(pawn_file, pawn_rank) &&
             s->board[pawn_rank * 8 + pawn_file] ==
@@ -423,7 +476,8 @@ static bool square_attacked(const engine_state *s,
             return true;
     }
 
-    for (i = 0; i < sizeof(knight_steps) / sizeof(knight_steps[0]); ++i) {
+    for (i = 0; i < sizeof(knight_steps) / sizeof(knight_steps[0]); ++i)
+    {
         int f = file + knight_steps[i][0];
         int r = rank + knight_steps[i][1];
         if (on_board(f, r) &&
@@ -431,7 +485,8 @@ static bool square_attacked(const engine_state *s,
             return true;
     }
 
-    for (i = 0; i < sizeof(king_steps) / sizeof(king_steps[0]); ++i) {
+    for (i = 0; i < sizeof(king_steps) / sizeof(king_steps[0]); ++i)
+    {
         int f = file + king_steps[i][0];
         int r = rank + king_steps[i][1];
         if (on_board(f, r) &&
@@ -439,12 +494,15 @@ static bool square_attacked(const engine_state *s,
             return true;
     }
 
-    for (i = 0; i < sizeof(bishop_steps) / sizeof(bishop_steps[0]); ++i) {
+    for (i = 0; i < sizeof(bishop_steps) / sizeof(bishop_steps[0]); ++i)
+    {
         int f = file + bishop_steps[i][0];
         int r = rank + bishop_steps[i][1];
-        while (on_board(f, r)) {
+        while (on_board(f, r))
+        {
             int8_t piece = s->board[r * 8 + f];
-            if (piece) {
+            if (piece)
+            {
                 if (piece == sign * PDCHESS_PIECE_BISHOP ||
                     piece == sign * PDCHESS_PIECE_QUEEN)
                     return true;
@@ -455,12 +513,15 @@ static bool square_attacked(const engine_state *s,
         }
     }
 
-    for (i = 0; i < sizeof(rook_steps) / sizeof(rook_steps[0]); ++i) {
+    for (i = 0; i < sizeof(rook_steps) / sizeof(rook_steps[0]); ++i)
+    {
         int f = file + rook_steps[i][0];
         int r = rank + rook_steps[i][1];
-        while (on_board(f, r)) {
+        while (on_board(f, r))
+        {
             int8_t piece = s->board[r * 8 + f];
-            if (piece) {
+            if (piece)
+            {
                 if (piece == sign * PDCHESS_PIECE_ROOK ||
                     piece == sign * PDCHESS_PIECE_QUEEN)
                     return true;
@@ -499,7 +560,8 @@ bool pdchess_is_in_check(const pdchess_state *state)
 static void add_move(pdchess_move *moves, size_t capacity, size_t *count,
                      int from, int to, uint8_t flags)
 {
-    if (*count < capacity && moves) {
+    if (*count < capacity && moves)
+    {
         moves[*count].from = (pdchess_square)from;
         moves[*count].to = (pdchess_square)to;
         moves[*count].flags = flags;
@@ -518,7 +580,8 @@ static size_t generate_pseudo(const engine_state *s,
     size_t count = 0;
     int from;
 
-    for (from = 0; from < 64; ++from) {
+    for (from = 0; from < 64; ++from)
+    {
         int8_t piece = s->board[from];
         int type;
         int file;
@@ -529,14 +592,16 @@ static size_t generate_pseudo(const engine_state *s,
         file = from & 7;
         rank = from >> 3;
 
-        if (type == PDCHESS_PIECE_PAWN) {
+        if (type == PDCHESS_PIECE_PAWN)
+        {
             int direction = s->side == PDCHESS_COLOR_WHITE ? 1 : -1;
             int start_rank = s->side == PDCHESS_COLOR_WHITE ? 1 : 6;
             int promotion_rank = s->side == PDCHESS_COLOR_WHITE ? 7 : 0;
             int next_rank = rank + direction;
             int to = next_rank * 8 + file;
             int delta;
-            if (on_board(file, next_rank) && !s->board[to]) {
+            if (on_board(file, next_rank) && !s->board[to])
+            {
                 add_move(moves, capacity, &count, from, to,
                          next_rank == promotion_rank
                              ? PDCHESS_MOVE_PROMOTION
@@ -547,20 +612,24 @@ static size_t generate_pseudo(const engine_state *s,
                              (rank + 2 * direction) * 8 + file,
                              PDCHESS_MOVE_NONE);
             }
-            for (delta = -1; delta <= 1; delta += 2) {
+            for (delta = -1; delta <= 1; delta += 2)
+            {
                 int capture_file = file + delta;
                 int capture_to;
                 uint8_t flags;
                 if (!on_board(capture_file, next_rank))
                     continue;
                 capture_to = next_rank * 8 + capture_file;
-                if (capture_to == s->en_passant) {
+                if (capture_to == s->en_passant)
+                {
                     add_move(moves, capacity, &count, from, capture_to,
                              PDCHESS_MOVE_CAPTURE |
-                             PDCHESS_MOVE_EN_PASSANT);
-                } else if (s->board[capture_to] &&
-                           piece_color(s->board[capture_to]) !=
-                               (pdchess_color)s->side) {
+                                 PDCHESS_MOVE_EN_PASSANT);
+                }
+                else if (s->board[capture_to] &&
+                         piece_color(s->board[capture_to]) !=
+                             (pdchess_color)s->side)
+                {
                     flags = PDCHESS_MOVE_CAPTURE;
                     if (next_rank == promotion_rank)
                         flags |= PDCHESS_MOVE_PROMOTION;
@@ -568,8 +637,10 @@ static size_t generate_pseudo(const engine_state *s,
                              flags);
                 }
             }
-        } else if (type == PDCHESS_PIECE_KNIGHT ||
-                   type == PDCHESS_PIECE_KING) {
+        }
+        else if (type == PDCHESS_PIECE_KNIGHT ||
+                 type == PDCHESS_PIECE_KING)
+        {
             const int8_t (*steps)[2] =
                 type == PDCHESS_PIECE_KNIGHT ? knight_steps : king_steps;
             size_t step_count = type == PDCHESS_PIECE_KNIGHT
@@ -578,7 +649,8 @@ static size_t generate_pseudo(const engine_state *s,
                                     : sizeof(king_steps) /
                                           sizeof(king_steps[0]);
             size_t i;
-            for (i = 0; i < step_count; ++i) {
+            for (i = 0; i < step_count; ++i)
+            {
                 int f = file + steps[i][0];
                 int r = rank + steps[i][1];
                 int to;
@@ -595,9 +667,11 @@ static size_t generate_pseudo(const engine_state *s,
             }
 
             if (type == PDCHESS_PIECE_KING &&
-                !color_in_check(s, (pdchess_color)s->side)) {
+                !color_in_check(s, (pdchess_color)s->side))
+            {
                 pdchess_color enemy = opposite((pdchess_color)s->side);
-                if (s->side == PDCHESS_COLOR_WHITE && from == 4) {
+                if (s->side == PDCHESS_COLOR_WHITE && from == 4)
+                {
                     if ((s->castling & CASTLE_WHITE_K) &&
                         s->board[7] == PDCHESS_PIECE_ROOK &&
                         !s->board[5] && !s->board[6] &&
@@ -612,7 +686,9 @@ static size_t generate_pseudo(const engine_state *s,
                         !square_attacked(s, 2, enemy))
                         add_move(moves, capacity, &count, 4, 2,
                                  PDCHESS_MOVE_CASTLE);
-                } else if (s->side == PDCHESS_COLOR_BLACK && from == 60) {
+                }
+                else if (s->side == PDCHESS_COLOR_BLACK && from == 60)
+                {
                     if ((s->castling & CASTLE_BLACK_K) &&
                         s->board[63] == -PDCHESS_PIECE_ROOK &&
                         !s->board[61] && !s->board[62] &&
@@ -629,32 +705,43 @@ static size_t generate_pseudo(const engine_state *s,
                                  PDCHESS_MOVE_CASTLE);
                 }
             }
-        } else {
+        }
+        else
+        {
             const int8_t (*steps)[2];
             size_t step_count;
             size_t i;
-            if (type == PDCHESS_PIECE_BISHOP) {
+            if (type == PDCHESS_PIECE_BISHOP)
+            {
                 steps = bishop_steps;
                 step_count = 4;
-            } else if (type == PDCHESS_PIECE_ROOK) {
+            }
+            else if (type == PDCHESS_PIECE_ROOK)
+            {
                 steps = rook_steps;
                 step_count = 4;
-            } else {
+            }
+            else
+            {
                 static const int8_t queen_steps[][2] = {
-                    {1, 1}, {-1, 1}, {-1, -1}, {1, -1},
-                    {1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+                    {1, 1}, {-1, 1}, {-1, -1}, {1, -1}, {1, 0}, {0, 1}, {-1, 0}, {0, -1}};
                 steps = queen_steps;
                 step_count = 8;
             }
-            for (i = 0; i < step_count; ++i) {
+            for (i = 0; i < step_count; ++i)
+            {
                 int f = file + steps[i][0];
                 int r = rank + steps[i][1];
-                while (on_board(f, r)) {
+                while (on_board(f, r))
+                {
                     int to = r * 8 + f;
-                    if (!s->board[to]) {
+                    if (!s->board[to])
+                    {
                         add_move(moves, capacity, &count, from, to,
                                  PDCHESS_MOVE_NONE);
-                    } else {
+                    }
+                    else
+                    {
                         if (piece_color(s->board[to]) !=
                             (pdchess_color)s->side)
                             add_move(moves, capacity, &count, from, to,
@@ -676,10 +763,14 @@ static void update_castling(engine_state *s, int from, int to, int8_t piece)
         s->castling &= 0xfcu;
     else if (piece == -PDCHESS_PIECE_KING)
         s->castling &= 0xf3u;
-    if (from == 0 || to == 0) s->castling &= 0xfdu;
-    if (from == 7 || to == 7) s->castling &= 0xfeu;
-    if (from == 56 || to == 56) s->castling &= 0xf7u;
-    if (from == 63 || to == 63) s->castling &= 0xfbu;
+    if (from == 0 || to == 0)
+        s->castling &= 0xfdu;
+    if (from == 7 || to == 7)
+        s->castling &= 0xfeu;
+    if (from == 56 || to == 56)
+        s->castling &= 0xf7u;
+    if (from == 63 || to == 63)
+        s->castling &= 0xfbu;
 }
 
 static void apply_unchecked(engine_state *s, pdchess_move move)
@@ -691,9 +782,10 @@ static void apply_unchecked(engine_state *s, pdchess_move move)
 
     update_castling(s, move.from, move.to, piece);
     s->board[move.from] = 0;
-    if (move.flags & PDCHESS_MOVE_EN_PASSANT) {
+    if (move.flags & PDCHESS_MOVE_EN_PASSANT)
+    {
         int captured_square = move.to +
-            (s->side == PDCHESS_COLOR_WHITE ? -8 : 8);
+                              (s->side == PDCHESS_COLOR_WHITE ? -8 : 8);
         captured = s->board[captured_square];
         s->board[captured_square] = 0;
     }
@@ -702,17 +794,25 @@ static void apply_unchecked(engine_state *s, pdchess_move move)
         s->board[move.to] =
             (int8_t)(color_sign((pdchess_color)s->side) *
                      PDCHESS_PIECE_QUEEN);
-    if (move.flags & PDCHESS_MOVE_CASTLE) {
-        if (move.to == 6) {
+    if (move.flags & PDCHESS_MOVE_CASTLE)
+    {
+        if (move.to == 6)
+        {
             s->board[5] = s->board[7];
             s->board[7] = 0;
-        } else if (move.to == 2) {
+        }
+        else if (move.to == 2)
+        {
             s->board[3] = s->board[0];
             s->board[0] = 0;
-        } else if (move.to == 62) {
+        }
+        else if (move.to == 62)
+        {
             s->board[61] = s->board[63];
             s->board[63] = 0;
-        } else if (move.to == 58) {
+        }
+        else if (move.to == 58)
+        {
             s->board[59] = s->board[56];
             s->board[56] = 0;
         }
@@ -749,11 +849,13 @@ size_t pdchess_generate_legal_moves(pdchess_state *state,
     if (pseudo_count > PDCHESS_MAX_LEGAL_MOVES)
         pseudo_count = PDCHESS_MAX_LEGAL_MOVES;
 
-    for (i = 0; i < pseudo_count; ++i) {
+    for (i = 0; i < pseudo_count; ++i)
+    {
         engine_state next = *s;
         pdchess_color mover = (pdchess_color)s->side;
         apply_unchecked(&next, pseudo[i]);
-        if (!color_in_check(&next, mover)) {
+        if (!color_in_check(&next, mover))
+        {
             if (legal_count < capacity && moves)
                 moves[legal_count] = pseudo[i];
             ++legal_count;
@@ -794,8 +896,10 @@ bool pdchess_apply_move(pdchess_state *state, pdchess_move move)
         return false;
     count = pdchess_generate_legal_moves(state, moves,
                                          PDCHESS_MAX_LEGAL_MOVES);
-    for (i = 0; i < count; ++i) {
-        if (same_move(moves[i], move)) {
+    for (i = 0; i < count; ++i)
+    {
+        if (same_move(moves[i], move))
+        {
             apply_unchecked(impl(state), moves[i]);
             return true;
         }
@@ -820,18 +924,22 @@ static int evaluate(const engine_state *s)
 {
     int score = 0;
     int square;
-    for (square = 0; square < 64; ++square) {
+    for (square = 0; square < 64; ++square)
+    {
         int8_t piece = s->board[square];
         int type;
         int positional = 0;
         if (!piece)
             continue;
         type = piece_type(piece);
-        if (type == PDCHESS_PIECE_PAWN) {
+        if (type == PDCHESS_PIECE_PAWN)
+        {
             int rank = square >> 3;
             positional = piece > 0 ? rank * 6 : (7 - rank) * 6;
-        } else if (type == PDCHESS_PIECE_KNIGHT ||
-                   type == PDCHESS_PIECE_BISHOP) {
+        }
+        else if (type == PDCHESS_PIECE_KNIGHT ||
+                 type == PDCHESS_PIECE_BISHOP)
+        {
             int file = square & 7;
             int rank = square >> 3;
             positional = 12 - (file > 3 ? file - 4 : 3 - file) * 3 -
@@ -847,13 +955,16 @@ static bool search_should_stop(search_context *context)
 {
     if (context->cancelled || context->node_limited)
         return true;
-    if (context->node_limit && context->nodes >= context->node_limit) {
+    if (context->node_limit && context->nodes >= context->node_limit)
+    {
         context->node_limited = true;
         return true;
     }
-    if (context->poll && context->nodes >= context->next_poll) {
+    if (context->poll && context->nodes >= context->next_poll)
+    {
         context->next_poll = context->nodes + context->poll_interval;
-        if (!context->poll(context->userdata)) {
+        if (!context->poll(context->userdata))
+        {
             context->cancelled = true;
             return true;
         }
@@ -884,7 +995,8 @@ static int negamax(engine_state *s, int depth, int ply,
                    ? -SCORE_MATE + ply
                    : 0;
 
-    for (i = 0; i < count; ++i) {
+    for (i = 0; i < count; ++i)
+    {
         engine_state child = *s;
         int score;
         apply_unchecked(&child, moves[i]);
@@ -918,7 +1030,8 @@ static int root_search(engine_state *s, uint8_t depth,
                    ? -SCORE_MATE
                    : 0;
 
-    for (i = 0; i < count; ++i) {
+    for (i = 0; i < count; ++i)
+    {
         engine_state child = *s;
         int score;
         apply_unchecked(&child, moves[i]);
@@ -926,7 +1039,8 @@ static int root_search(engine_state *s, uint8_t depth,
                          -SCORE_INF, SCORE_INF, context);
         if (context->cancelled || context->node_limited)
             break;
-        if (score > best_score) {
+        if (score > best_score)
+        {
             best_score = score;
             *best_move = moves[i];
         }
@@ -967,7 +1081,8 @@ pdchess_search_result pdchess_search(pdchess_state *state,
     if (!limits.depth_limit)
         limits.depth_limit = 1;
 
-    for (depth = 1; depth <= limits.depth_limit; ++depth) {
+    for (depth = 1; depth <= limits.depth_limit; ++depth)
+    {
         pdchess_move iteration_best = result.best_move;
         int score;
         context.root_depth = depth;
@@ -991,23 +1106,35 @@ pdchess_search_result pdchess_search(pdchess_state *state,
 
 const char *pdchess_status_name(pdchess_game_status status)
 {
-    switch (status) {
-    case PDCHESS_GAME_PLAYING: return "playing";
-    case PDCHESS_GAME_CHECK: return "check";
-    case PDCHESS_GAME_CHECKMATE: return "checkmate";
-    case PDCHESS_GAME_STALEMATE: return "stalemate";
-    default: return "unknown";
+    switch (status)
+    {
+    case PDCHESS_GAME_PLAYING:
+        return "playing";
+    case PDCHESS_GAME_CHECK:
+        return "check";
+    case PDCHESS_GAME_CHECKMATE:
+        return "checkmate";
+    case PDCHESS_GAME_STALEMATE:
+        return "stalemate";
+    default:
+        return "unknown";
     }
 }
 
 const char *pdchess_stop_reason_name(pdchess_stop_reason reason)
 {
-    switch (reason) {
-    case PDCHESS_STOP_DEPTH: return "depth";
-    case PDCHESS_STOP_NODE_LIMIT: return "node limit";
-    case PDCHESS_STOP_CANCELLED: return "cancelled";
-    case PDCHESS_STOP_NO_LEGAL_MOVE: return "no legal move";
-    default: return "unknown";
+    switch (reason)
+    {
+    case PDCHESS_STOP_DEPTH:
+        return "depth";
+    case PDCHESS_STOP_NODE_LIMIT:
+        return "node limit";
+    case PDCHESS_STOP_CANCELLED:
+        return "cancelled";
+    case PDCHESS_STOP_NO_LEGAL_MOVE:
+        return "no legal move";
+    default:
+        return "unknown";
     }
 }
 
@@ -1020,10 +1147,13 @@ bool pdchess_move_to_uci(pdchess_move move, char output[6])
     output[1] = (char)('1' + pdchess_square_rank(move.from));
     output[2] = (char)('a' + pdchess_square_file(move.to));
     output[3] = (char)('1' + pdchess_square_rank(move.to));
-    if (move.flags & PDCHESS_MOVE_PROMOTION) {
+    if (move.flags & PDCHESS_MOVE_PROMOTION)
+    {
         output[4] = 'q';
         output[5] = '\0';
-    } else {
+    }
+    else
+    {
         output[4] = '\0';
     }
     return true;
@@ -1047,7 +1177,8 @@ bool pdchess_move_from_uci(const char *text, pdchess_move *move)
                                      (uint8_t)(text[1] - '1'));
     move->to = pdchess_make_square((uint8_t)(text[2] - 'a'),
                                    (uint8_t)(text[3] - '1'));
-    if (length == 5) {
+    if (length == 5)
+    {
         move->promotion = PDCHESS_PIECE_QUEEN;
         move->flags = PDCHESS_MOVE_PROMOTION;
     }

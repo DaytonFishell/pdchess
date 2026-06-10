@@ -1,5 +1,8 @@
 {
     "fossil.ignoreMissingFossilWarning": true,
     "playdate-debug.sourcePath": "V:\\chess-playdate\\pdchess",
-    "playdate-debug.productName": "pdchess"
+    "playdate-debug.productName": "pdchess",
+    "makefile.makePath": "nmake",
+    "makefile.makefilePath": "V:\\pdchess\\build\\Makefile",
+    "C_Cpp.errorSquiggles": "enabled"
 }

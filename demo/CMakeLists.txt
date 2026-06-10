@@ -30,3 +30,9 @@ else()
 endif()
 
 include("${SDK}/C_API/buildsupport/playdate_game.cmake")
+
+target_sources(pdchess_lab_DEVICE PRIVATE
+    src/main.c
+    ../src/pdchess.c
+    ../src/syscalls.c
+)
