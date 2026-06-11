@@ -9,17 +9,17 @@ local CELL_SIZE = 30
 local PANEL_X = 248
 
 local positions = {
-    {name = "Start"},
-    {name = "Castling", fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"},
-    {name = "En passant", fen = "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1"},
-    {name = "Promotion", fen = "7k/P7/8/8/8/8/8/7K w - - 0 1"},
-    {name = "Mate", fen = "7k/6Q1/6K1/8/8/8/8/8 b - - 0 1"},
-    {name = "Stalemate", fen = "7k/5Q2/6K1/8/8/8/8/8 b - - 0 1"},
+    { name = "Start" },
+    { name = "Castling",   fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1" },
+    { name = "En passant", fen = "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1" },
+    { name = "Promotion",  fen = "7k/P7/8/8/8/8/8/7K w - - 0 1" },
+    { name = "Mate",       fen = "7k/6Q1/6K1/8/8/8/8/8 b - - 0 1" },
+    { name = "Stalemate",  fen = "7k/5Q2/6K1/8/8/8/8/8 b - - 0 1" },
 }
 
-local difficulty_names = {"Easy", "Medium", "Hard"}
-local node_limits = {2500, 15000, 75000}
-local depth_limits = {3, 5, 7}
+local difficulty_names = { "Easy", "Medium", "Hard" }
+local node_limits = { 2500, 15000, 75000 }
+local depth_limits = { 3, 5, 7 }
 local piece_letters = {
     [mcumax.PAWN_UPSTREAM] = "P",
     [mcumax.PAWN_DOWNSTREAM] = "P",
@@ -73,13 +73,13 @@ local function square_to_screen(square)
     local file = square & 7
     local rank = square >> 4
     local column = human_black and 7 - file or file
-    local row = human_black and rank or 7 - rank
+    local row = human_black and 7 - rank or rank
     return column * CELL_SIZE, row * CELL_SIZE
 end
 
 local function screen_to_square(column, row)
     local file = human_black and 7 - column or column
-    local rank = human_black and row or 7 - row
+    local rank = human_black and 7 - row or row
     return rank * 16 + file
 end
 
@@ -186,7 +186,9 @@ local function select_or_move()
     local test_position = position_index ~= 1
     local controlled_side = test_position and engine:get_current_side() or human_side()
     if (not test_position and engine:get_current_side() ~= human_side()) or
-        status == "Checkmate" or status == "Stalemate" then return end
+        status == "Checkmate" or status == "Stalemate" then
+        return
+    end
 
     if selected then
         for _, move in ipairs(legal_moves) do
@@ -241,10 +243,13 @@ menu:addMenuItem("Next position", function()
     load_position(position_index % #positions + 1)
 end)
 menu:addOptionsMenuItem("Test position",
-    {"Start", "Castling", "En passant", "Promotion", "Mate", "Stalemate"},
+    { "Start", "Castling", "En passant", "Promotion", "Mate", "Stalemate" },
     "Start", function(value)
         for index, position in ipairs(positions) do
-            if position.name == value then load_position(index) return end
+            if position.name == value then
+                load_position(index)
+                return
+            end
         end
     end)
 
