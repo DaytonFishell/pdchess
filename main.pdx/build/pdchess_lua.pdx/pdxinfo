@@ -1,0 +1,8 @@
+name=pdchess Lua
+author=Dayton F. and OpenAI
+description=A Playdate chess lab powered by the Lua port of mcu-max.
+bundleID=com.dayton.pdchess.lua
+version=1.0.0
+buildNumber=1
+pdxversion=30005
+buildtime=834500340
