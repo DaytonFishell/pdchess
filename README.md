@@ -1,93 +1,61 @@
-# pdchess
+# pdchess Lua
 
-`pdchess` is a compact, allocation-free chess engine module for Playdate C
-projects. The library is the product; `demo/` is an interactive developer lab
-showing how to integrate it.
+`pdchess` is a pure-Lua chess game for Playdate, powered by a Lua port of
+mcu-max. It does not contain or compile any C code.
 
-The engine provides caller-owned instances, legal move generation, complete
-FEN import/export, status inspection, and deterministic bounded search. It has
-no dependency on Playdate graphics, input, audio, or application APIs, so host
-tests can compile the same source used on device.
+- `main.lua`: Playdate UI, controls, menus, and game flow.
+- `mcumax.lua`: reusable chess rules and search engine.
+- `pdxinfo`: Playdate package metadata.
+- `tests/test_mcumax.lua`: desktop Lua regression tests.
 
-## Integration
+The engine supports legal move generation, FEN import, castling, en passant,
+queen promotion, check/checkmate/stalemate detection, and bounded iterative
+search.
 
-With CMake:
+## Build
 
-```cmake
-add_subdirectory(path/to/pdchess)
-target_link_libraries(your_game PRIVATE pdchess)
-```
-
-Or compile `src/pdchess.c` directly and add `include/` to the include path.
-The engine performs no heap allocation.
-
-```c
-pdchess_state game;
-pdchess_move moves[PDCHESS_MAX_LEGAL_MOVES];
-pdchess_search_limits limits = {15000, 5, NULL, NULL, 0};
-
-pdchess_init(&game);
-size_t count = pdchess_generate_legal_moves(
-    &game, moves, PDCHESS_MAX_LEGAL_MOVES);
-pdchess_search_result result = pdchess_search(&game, limits);
-if (result.has_move)
-    pdchess_apply_move(&game, result.best_move);
-```
-
-## API Notes
-
-- `pdchess_state` is opaque caller-owned storage. The current internal payload
-  size is returned by `pdchess_state_size()`. In the verified v0.1.0 build the
-  payload is 72 bytes inside 256 bytes of reserved public storage.
-- Public squares use `a1 = 0` through `h8 = 63`.
-- Each state is independent. Concurrent calls are safe when each thread uses a
-  different state. Do not operate on one state concurrently.
-- Search is synchronous and deterministic. Bound it by nodes and depth, and
-  optionally use the polling callback for time limits or user cancellation.
-- The polling callback runs inside search and must be fast. Return `false` to
-  cancel.
-- Move arrays are caller-provided. `PDCHESS_MAX_LEGAL_MOVES` is sufficient for
-  all legal positions.
-- Version 1 always promotes pawns to queens. Underpromotion is intentionally
-  unsupported.
-- Repetition and fifty-move draw adjudication are not implemented. FEN
-  halfmove and fullmove counters are nevertheless preserved and updated.
-
-Search currently uses approximately 1.4 KB of stack per active ply, mostly for
-the fixed legal-move array. The developer lab caps its presets at depth 7, for
-an estimated search stack below 10 KB. Confirm actual high-water usage on
-hardware when integrating unusually deep search settings.
-
-## Host Tests
+Install the Playdate SDK and set `PLAYDATE_SDK_PATH` when it is not located at
+`V:\PlaydateSDK`:
 
 ```powershell
-cmake -S . -B build
-cmake --build build
-ctest --test-dir build --output-on-failure
+.\build-lua.ps1
 ```
 
-## Playdate Lab
+The resulting package is `build\pdchess_lua.pdx`.
 
-Configure `demo/` as a normal Playdate C project:
+The build script stages only the Lua source and `pdxinfo`, keeping development
+files out of the Playdate package.
+
+## Test
+
+With Lua 5.3 or newer:
 
 ```powershell
-$env:PLAYDATE_SDK_PATH = "V:\chess-playdate\PlaydateSDK"
-cmake -S demo -B demo/build -G "Visual Studio 17 2022" -A x64
-cmake --build demo/build --config Debug
+& C:\lua55\lua55.exe tests\test_mcumax.lua
 ```
 
-For hardware, install `gcc-arm-none-eabi` and configure with:
+The suite covers starting-position perft, move application, castling, en
+passant, promotion, terminal positions, and bounded search.
 
-```powershell
-cmake -S demo -B demo/build-device `
-  -DCMAKE_TOOLCHAIN_FILE="$env:PLAYDATE_SDK_PATH/C_API/buildsupport/arm.cmake"
-cmake --build demo/build-device --config Release
+## Controls
+
+- Setup: Up/Down changes side, Left/Right changes AI difficulty, A starts.
+- Board: D-pad moves the cursor, A selects or moves, B cancels selection.
+- Crank: cycles through the selected piece's legal destinations.
+- System menu: resets the game or loads special test positions.
+
+## Engine API
+
+```lua
+local mcumax = require("mcumax")
+local engine = mcumax.new()
+
+local moves = engine:search_valid_moves()
+local best = engine:search_best_move(15000, 5)
+if best then
+    engine:play_move(best)
+end
 ```
 
-The lab controls and test positions are described on screen. It deliberately
-avoids production-game features such as persistence, clocks, animations,
-opening books, and polished menus.
-
-The Windows simulator build was verified with Playdate SDK 3.0.6. The resulting
-debug native payload was 88,064 bytes. A device build additionally requires
-`arm-none-eabi-gcc`; that compiler is not bundled with the Windows SDK.
+Squares use mcu-max's 0x88 representation. Use `parse_square`, `parse_move`,
+`format_square`, and `format_move` at API boundaries.
