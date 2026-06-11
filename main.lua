@@ -177,7 +177,7 @@ local function move_cursor(dx, dy)
     local file, rank = cursor & 7, cursor >> 4
     if human_black then dx, dy = -dx, -dy end
     file = math.max(0, math.min(7, file + dx))
-    rank = math.max(0, math.min(7, rank - dy))
+    rank = math.max(0, math.min(7, rank + dy))
     cursor = rank * 16 + file
 end
 
