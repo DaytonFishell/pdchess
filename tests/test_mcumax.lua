@@ -59,4 +59,24 @@ local info = engine:get_search_info()
 assert(best and engine:play_move(best), "search must return a legal move")
 assert(info.nodes > 0, "search must visit nodes")
 
+engine:init()
+local before = {}
+for square = 0, 127 do before[square] = engine.board[square] end
+local task = engine:begin_search(2500, 3, 8)
+local done, async_best, async_info
+local slices = 0
+repeat
+    done, async_best, async_info = engine:step_search(task)
+    slices = slices + 1
+    for square = 0, 127 do
+        assert(engine.board[square] == before[square],
+            "incremental search must not mutate the live position")
+    end
+    assert(slices < 10000, "incremental search did not finish")
+until done
+assert(slices > 1, "incremental search must yield between slices")
+assert(async_best and engine:play_move(async_best),
+    "incremental search must return a legal move")
+assert(async_info.nodes > 0, "incremental search must visit nodes")
+
 print("pdchess Lua tests passed")

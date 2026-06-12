@@ -1,0 +1,6 @@
+name=pdchess Watchdog Test
+author=pdchess contributors
+description=Exercises incremental mcu-max search across Playdate frames.
+bundleID=com.dayton.pdchess.watchdog
+version=1.0.0
+buildNumber=1

@@ -10,7 +10,8 @@ mcu-max. It does not contain or compile any C code.
 
 The engine supports legal move generation, FEN import, castling, en passant,
 queen promotion, check/checkmate/stalemate detection, and bounded iterative
-search.
+search. On Playdate, AI search is split across frames so the system watchdog
+continues receiving updates during long searches.
 
 ## Build
 
@@ -36,6 +37,10 @@ With Lua 5.3 or newer:
 
 The suite covers starting-position perft, move application, castling, en
 passant, promotion, terminal positions, and bounded search.
+
+`tests/playdate_watchdog` is a Playdate runtime harness for verifying that a
+hard search yields across frames instead of triggering the ten-second system
+watchdog.
 
 ## Controls
 

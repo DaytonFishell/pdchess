@@ -101,6 +101,7 @@ function Engine:_clear()
     self.node_count = 0
     self.node_max = 0
     self.stop_search = false
+    self.callback_interval = 1024
 end
 
 function Engine:init()
@@ -118,6 +119,22 @@ end
 
 function M.new()
     return setmetatable({}, Engine):init()
+end
+
+function Engine:clone()
+    local copy = M.new()
+    for square = 0, 127 do copy.board[square] = self.board[square] end
+    copy.side = self.side
+    copy.castling = {
+        K = self.castling.K,
+        Q = self.castling.Q,
+        k = self.castling.k,
+        q = self.castling.q,
+    }
+    copy.en_passant = self.en_passant
+    copy.halfmove = self.halfmove
+    copy.fullmove = self.fullmove
+    return copy
 end
 
 function Engine:set_fen_position(fen)
@@ -429,7 +446,7 @@ end
 
 function Engine:_tick()
     self.node_count = self.node_count + 1
-    if self.callback and (self.node_count & 0x3ff) == 0 then
+    if self.callback and self.node_count % self.callback_interval == 0 then
         self.callback(self.callback_userdata)
     end
     if self.stop_search then return false end
@@ -520,6 +537,44 @@ function Engine:get_search_info()
     return self.search_info or {nodes = 0, depth = 0, score = 0}
 end
 
+function Engine:begin_search(node_max, depth_max, nodes_per_slice)
+    local worker = self:clone()
+    local task = {
+        worker = worker,
+        done = false,
+        best_move = nil,
+        info = {nodes = 0, depth = 0, score = 0},
+    }
+    worker:set_callback(function()
+        coroutine.yield()
+    end, nil, nodes_per_slice or 32)
+    task.thread = coroutine.create(function()
+        local best = worker:search_best_move(node_max, depth_max)
+        return best, worker:get_search_info()
+    end)
+    return task
+end
+
+function Engine:step_search(task)
+    assert(task and task.thread, "invalid search task")
+    if task.done then return true, copy_move(task.best_move), task.info end
+
+    local ok, best, info = coroutine.resume(task.thread)
+    if not ok then error(best, 0) end
+
+    task.info = {
+        nodes = task.worker.node_count,
+        depth = task.worker:get_search_info().depth,
+        score = task.worker:get_search_info().score,
+    }
+    if coroutine.status(task.thread) == "dead" then
+        task.done = true
+        task.best_move = copy_move(best)
+        task.info = info or task.info
+    end
+    return task.done, copy_move(task.best_move), task.info
+end
+
 function Engine:get_status()
     local moves = self:_legal_moves(false)
     if #moves == 0 then
@@ -528,8 +583,9 @@ function Engine:get_status()
     return self:_in_check(self.side) and "Check" or "Playing"
 end
 
-function Engine:set_callback(callback, userdata)
+function Engine:set_callback(callback, userdata, interval)
     self.callback, self.callback_userdata = callback, userdata
+    self.callback_interval = math.max(1, tonumber(interval) or 1024)
 end
 
 function Engine:stop()

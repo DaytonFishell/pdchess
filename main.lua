@@ -41,6 +41,7 @@ local legal_moves = {}
 local last_move
 local ai_pending = false
 local ai_thinking = false
+local ai_search
 local search_info
 local crank_accumulator = 0
 local crank_index = 0
@@ -64,6 +65,8 @@ local function load_position(index)
     selected = nil
     last_move = nil
     search_info = nil
+    ai_search = nil
+    ai_thinking = false
     cursor = mcumax.parse_square(human_black and "e7" or "e2")
     refresh_legal_moves()
     ai_pending = not position.fen and engine:get_current_side() ~= human_side()
@@ -224,15 +227,25 @@ local function cycle_crank_target(direction)
     cursor = targets[crank_index]
 end
 
-local function run_ai()
-    ai_thinking = true
-    local best = engine:search_best_move(node_limits[difficulty], depth_limits[difficulty])
-    search_info = engine:get_search_info()
+local function advance_ai()
+    if not ai_search then
+        ai_thinking = true
+        ai_search = engine:begin_search(
+            node_limits[difficulty],
+            depth_limits[difficulty],
+            32)
+    end
+
+    local done, best, info = engine:step_search(ai_search)
+    search_info = info
+    if not done then return end
+
     if best then
         engine:play_move(best)
         last_move = best
     end
     refresh_legal_moves()
+    ai_search = nil
     ai_pending = false
     ai_thinking = false
 end
@@ -280,7 +293,7 @@ function playdate.update()
 
     draw_board()
     draw_panel()
-    if ai_pending then run_ai() end
+    if ai_pending then advance_ai() end
 end
 
 function playdate.upButtonDown()
